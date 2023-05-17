@@ -2,67 +2,98 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GameManager : MonoBehaviour
-{
-    public static GameManager instance;
+public class GameManager : MonoBehaviour {
+  public static GameManager instance;
 
-    [SerializeField] private float time = 0.1f;
-    [SerializeField] private bool isPlayerTurn = true;
-    [SerializeField] private int entityNum = 0;
-    [SerializeField] private List<Entity> entities = new List<Entity>();
+  [Header("Time")]
+  [SerializeField] private float baseTime = 0.075f;
+  [SerializeField] private float delayTime; //Read-only
 
-    public bool IsPlayerTurn { get => isPlayerTurn; } 
+  [Header("Entities")]
+  [SerializeField] private bool isPlayerTurn = true; //Read-only
+  [SerializeField] private int actorNum = 0; //Read-only
+  [SerializeField] private List<Entity> entities = new List<Entity>();
+  [SerializeField] private List<Actor> actors = new List<Actor>();
 
+  [Header("Death")]
+  [SerializeField] private Sprite deadSprite;
+  public bool IsPlayerTurn { get => isPlayerTurn; }
+  public List<Entity> Entities { get => entities; }
+  public List<Actor> Actors { get => actors; }
+  public Sprite DeadSprite { get => deadSprite; }
 
-    void Awake()
-    {
-        if (instance == null)
-        {
-            instance = this;
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-
+  private void Awake() {
+    if (instance == null) {
+      instance = this;
+    } else {
+      Destroy(gameObject);
     }
-    private void StartTurn()
-    {
-        //Debug.Log($"{entities[entityNum].name} starts its turn!");
-        if (entities[entityNum].GetComponent<Player>())
-            isPlayerTurn = true;
-        else if (entities[entityNum].IsSentient)
-            Action.SkipAction(entities[entityNum]); // We don't have logic yet, so just skip the turn
-    }
+  }
 
-    public void EndTurn()
-    {
-        //Debug.Log($"{entities[entityNum].name} ends its turn!");
-        if (entities[entityNum].GetComponent<Player>())
-            isPlayerTurn = false;
-        
-        if (entityNum == entities.Count - 1)
-            entityNum = 0;
-        else
-            entityNum++;
-
-        StartCoroutine(TurnDelay());
+  private void StartTurn() {
+    //Debug.Log($"{Actors[actorNum].name} starts its turn!");
+    if (actors[actorNum].GetComponent<Player>()) {
+      isPlayerTurn = true;
+    } else {
+      if (actors[actorNum].GetComponent<HostileEnemy>()) {
+        actors[actorNum].GetComponent<HostileEnemy>().RunAI();
+      } else {
+        Action.SkipAction();
+      }
     }
-    
-    private IEnumerator TurnDelay()
-    {
-        yield return new WaitForSeconds(time);
-        StartTurn();
+  }
+
+  public void EndTurn() {
+    //Debug.Log($"{Actors[actorNum].name} ends its turn!");
+    if (actors[actorNum].GetComponent<Player>()) {
+      isPlayerTurn = false;
     }
 
-    public void AddEntity(Entity entity)
-    {
-        entities.Add(entity);
+    if (actorNum == actors.Count - 1) {
+      actorNum = 0;
+    } else {
+      actorNum++;
     }
 
-    public void InsertEntity(Entity entity, int index)
-    {
-        entities.Insert(index, entity);
+    StartCoroutine(TurnDelay());
+  }
+
+  public IEnumerator TurnDelay() {
+    yield return new WaitForSeconds(delayTime);
+    StartTurn();
+  }
+
+  public void AddEntity(Entity entity) {
+    entities.Add(entity);
+  }
+
+  public void RemoveEntity(Entity entity) {
+    entities.Remove(entity);
+  }
+
+  public void AddActor(Actor actor) {
+    actors.Add(actor);
+    delayTime = SetTime();
+  }
+
+  public void InsertActor(Actor actor, int index) {
+    actors.Insert(index, actor);
+    delayTime = SetTime();
+  }
+
+  public void RemoveActor(Actor actor) {
+    actors.Remove(actor);
+    delayTime = SetTime();
+  }
+
+  public Actor GetBlockingActorAtLocation(Vector3 location) {
+    foreach (Actor actor in actors) {
+      if (actor.BlocksMovement && actor.transform.position == location) {
+        return actor;
+      }
     }
+    return null;
+  }
+
+  private float SetTime() => baseTime / actors.Count;
 }
-

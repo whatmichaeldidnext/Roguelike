@@ -1,21 +1,17 @@
 using UnityEngine;
 
-public class Entity : MonoBehaviour
-{
-    [SerializeField] private bool isSentient = false;
-    
-    public bool IsSentient { get => isSentient; }
-    // Start is called before the first frame update
-    void Start()
-    {
-        if (GetComponent<Player>())
-            GameManager.instance.InsertEntity(this, 0);
-        else if (IsSentient)
-            GameManager.instance.AddEntity(this);
-    }
+/// <summary>
+/// A generic class to represent players, enemies, items, etc.
+/// </summary>
+public class Entity : MonoBehaviour {
+  [SerializeField] private bool blocksMovement;
+  public bool BlocksMovement { get => blocksMovement; set => blocksMovement = value; }
 
-    public void Move(Vector2 direction)
-    {
-        transform.position += (Vector3)direction;
-    }
+  public void AddToGameManager() {
+    GameManager.instance.Entities.Add(this);
+  }
+
+  public void Move(Vector2 direction) {
+    transform.position += (Vector3)direction;
+  }
 }
